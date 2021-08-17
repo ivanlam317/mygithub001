@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "mykube-0dcf"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "mykube-0dcf"
+  template:
+    metadata:
+      labels:
+        app: "mykube-0dcf"
+    spec:
+      containers:
+        - name: "mykube-0dcf"
+          image: "ivanmycontainer.azurecr.io/mykube"
+          ports:
+          - containerPort: 999
