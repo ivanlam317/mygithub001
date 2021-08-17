@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ivanmycontainer.azurecr.io
+        username: ${{ secrets.acr_ivanmycontainer_username }}
+        password: ${{ secrets.acr_ivanmycontainer_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/demo" -f  "Dockerfile" -t ivanmycontainer.azurecr.io/mykube:${{ github.sha }} --label dockerfile-path=Dockerfile
+        docker push ivanmycontainer.azurecr.io/mykube:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_mykube_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep mykube8fb9 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace mykube8fb9`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: mykube8fb9
+        container-registry-url: ivanmycontainer.azurecr.io
+        container-registry-username: ${{ secrets.acr_ivanmycontainer_username }}
+        container-registry-password: ${{ secrets.acr_ivanmycontainer_password }}
+        secret-name: mykubedockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: mykube8fb9
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          ivanmycontainer.azurecr.io/mykube:${{ github.sha }}
+        imagepullsecrets: |
+          mykubedockerauth
