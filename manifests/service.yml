@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: "mykube-0dcf"
+    labels:
+        app: "mykube-0dcf"
+spec:
+    type: LoadBalancer
+    ports:
+    - port: 999
+      targetPort: 999
+      protocol: TCP
+      name: http
+    selector:
+        app: "mykube-0dcf"
